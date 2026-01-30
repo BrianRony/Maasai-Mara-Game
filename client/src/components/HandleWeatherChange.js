@@ -1,0 +1,54 @@
+import React, { useState } from 'react';
+
+function HandleWeatherChange({ playerId, onComplete }) {
+  const [result, setResult] = useState('');
+
+  const handleWeatherChange = async () => {
+    try {
+      const response = await fetch('/api/handle-weather-change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ player_id: playerId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setResult(data.message);
+        
+        // Wait 2 seconds so user can read the message, then move to next step
+        setTimeout(() => {
+          if (onComplete) onComplete(data.updated_stats || {});
+        }, 2000);
+      } else {
+        setResult('Error handling weather change: ' + response.statusText);
+      }
+    } catch (error) {
+      console.error('Error handling weather change:', error);
+      setResult('Error handling weather change: ' + error.message);
+    }
+  };
+
+  return (
+    <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-center">
+      <h2 className="text-2xl font-bold text-yellow-500 mb-4">Weather Check</h2>
+      <p className="text-gray-300 mb-4">The skies above the Mara are changing...</p>
+
+      <button 
+        onClick={handleWeatherChange}
+        className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-md transition duration-300"
+      >
+        Check Weather
+      </button>
+      
+      {result && (
+        <div className="mt-4 p-4 bg-gray-700 rounded-md">
+          <p className="text-yellow-400">{result}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default HandleWeatherChange;

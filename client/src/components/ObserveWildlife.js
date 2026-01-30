@@ -1,0 +1,81 @@
+import React, { useState, useEffect } from 'react';
+
+const ObserveWildlife = ({ playerId, onComplete }) => {
+  const [wildlife, setWildlife] = useState(null);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWildlifeData();
+  }, [playerId]);
+
+  const fetchWildlifeData = async () => {
+    try {
+      const response = await fetch(`/api/observe-wildlife?player_id=${playerId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.wildlife) setWildlife(data.wildlife);
+        else setMessage('No wildlife found.');
+      }
+      setLoading(false);
+    } catch (error) {
+      setMessage('Error loading wildlife.');
+      setLoading(false);
+    }
+  };
+
+  const handleObserve = async () => {
+    try {
+      const response = await fetch(`/api/observe-wildlife?player_id=${playerId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_id: playerId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage(data.message);
+        setTimeout(() => {
+          if (onComplete) onComplete(data.updated_stats);
+        }, 2500); // 2.5s delay to read the outcome
+      } else {
+        setMessage(`Error: ${data.message}`);
+      }
+    } catch (error) {
+      setMessage(`Connection Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <div className="w-full text-center">
+      {loading ? (
+        <p className="text-gray-400 animate-pulse">Scanning the horizon...</p>
+      ) : wildlife ? (
+        <div className="mb-8">
+          <div className="text-6xl mb-4">🦁</div>
+          <h3 className="text-2xl font-bold text-yellow-300 mb-2">{wildlife.name}</h3>
+          <p className="text-gray-400 italic">"{wildlife.description}"</p>
+        </div>
+      ) : (
+        <p className="text-red-400">{message}</p>
+      )}
+
+      {!message ? (
+        <button
+          onClick={handleObserve}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform transition hover:scale-105"
+        >
+          Observe Closely
+        </button>
+      ) : (
+        <div className="mt-6 p-4 bg-gray-700/50 rounded-lg border border-yellow-600/50">
+          <p className="text-yellow-300 font-medium">{message}</p>
+          <p className="text-xs text-gray-400 mt-2">Proceeding...</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ObserveWildlife;

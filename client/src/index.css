@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 500;
+}
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: aqua;
+    height: 50px;
+    font-size: large;
+    padding-left: 20px;
+    padding-right: 30px;
+    
+}
+nav p {
+    font-size: 1.5rem;
+    margin: 1rem;
+    font-weight: bold;
+    text-decoration: none;
+    color: black;
+}
+
+
+nav ul {
+    display: flex;
+    list-style: none;
+    justify-content: center;
+    align-items: center;
+   
+
+    
+}
+nav ul li {
+    border: 5px;
+    border-color: black;
+}
+
+.pixelated-image {
+    image-rendering: pixelated; /* Ensures pixelated rendering */
+  }
+  
