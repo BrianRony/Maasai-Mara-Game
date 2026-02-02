@@ -84,11 +84,7 @@ app = create_app()
 # AUTO-MIGRATION LOGIC FOR RENDER
 with app.app_context():
     try:
-        print("Starting database reset sequence...")
-        # TEMPORARY: Drop all tables to fix the broken schema state
-        db.drop_all() 
-        # Uncomment the line above if you need to wipe the DB clean
-        
+        # NO DROP ALL - Preserving data and avoiding deadlocks
         db.create_all()
         print("Database tables created.")
         
@@ -101,8 +97,6 @@ with app.app_context():
             # Run seeders
             characters = seed_characters()
             maps = seed_maps()
-            # We don't necessarily need dummy players/quests for the game to work, 
-            # but characters/maps are essential.
             print("Database seeded successfully!")
     except Exception as e:
         print(f"Error during startup migration: {e}")

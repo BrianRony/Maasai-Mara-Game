@@ -67,8 +67,9 @@ class PlayerResource(Resource):
 
             # Fetch the default starting location
             starting_location = Map.query.filter_by(coordinates=default_start_location_coordinates).first()
-            if not starting_location:
-                return {'message': f'Starting location {default_start_location_coordinates} not found'}, 404
+            
+            # Fallback if map not found (prevent 404 crash if map missing)
+            starting_location_uuid = starting_location.uuid if starting_location else None
 
             # Check if a player with the same name already exists
             existing_player = Player.query.filter_by(name=args['name']).first()
@@ -77,11 +78,11 @@ class PlayerResource(Resource):
 
             new_player = Player(
                 name=args['name'],
-                character_id=character.uuid,  # Ensure using character_id here
+                character_id=character.uuid,
                 health=100,
                 score=0,
                 inventory=character.inventory,
-                current_location_id=starting_location.uuid  # Ensure matching UUID type
+                current_location_id=starting_location_uuid
             )
 
             db.session.add(new_player)
