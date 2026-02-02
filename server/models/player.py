@@ -13,7 +13,7 @@ class Player(BaseModel):
     inventory = db.Column(JSON, default=lambda: [])
     current_quest = db.Column(JSON, nullable=True)  # Store current quest info as JSON
     
-    current_location_id = db.Column(Integer, db.ForeignKey('maps.uuid'))
+    current_location_id = db.Column(String(36), db.ForeignKey('maps.uuid'))
     current_location = relationship("Map", back_populates="players")
     character_id = db.Column(String(36), db.ForeignKey('characters.uuid'))
     character = relationship("Character", back_populates="player", uselist=False)

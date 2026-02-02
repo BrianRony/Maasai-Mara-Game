@@ -13,7 +13,7 @@ class Quest(BaseModel):
     outcomes = db.Column(JSON, nullable=False)
     is_completed = db.Column(Boolean, default=False)
 
-    location_id = db.Column(db.Integer, db.ForeignKey('maps.uuid'))
+    location_id = db.Column(String(36), db.ForeignKey('maps.uuid'))
     location = relationship("Map", back_populates="quests")
 
     serialize_rules = ('-location',)
