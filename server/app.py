@@ -84,6 +84,10 @@ app = create_app()
 # AUTO-MIGRATION LOGIC FOR RENDER
 with app.app_context():
     try:
+        # TEMPORARY: Drop all tables to fix the broken schema state
+        db.drop_all() 
+        # Uncomment the line above if you need to wipe the DB clean
+        
         db.create_all()
         print("Database tables created.")
         
