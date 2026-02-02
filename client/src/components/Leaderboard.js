@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SafariLayout from './SafariLayout';
 
+import config from '../config';
+
 function Leaderboard() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ function Leaderboard() {
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch('/api/players');
+      const response = await fetch(`${config.API_BASE_URL}/api/players`);
       if (response.ok) {
         const data = await response.json();
         // Sort by score (descending)

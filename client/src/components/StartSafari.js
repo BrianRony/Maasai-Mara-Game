@@ -1,32 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ChangeCharacterType from './ChangeCharacterType';
+
+import config from '../config';
 
 function StartSafari({ playerId, onComplete }) {
   const [message, setMessage] = useState('');
   const [characterType, setCharacterType] = useState('');
   const [showChangeType, setShowChangeType] = useState(false);
-  const [playerStats, setPlayerStats] = useState(null);
-
-  const fetchPlayerStats = async () => {
-    try {
-      // FIX: Fetch only the specific player, returns object directly
-      const response = await fetch(`/api/players/${playerId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPlayerStats(data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlayerStats();
-  }, [playerId]);
 
   const handleStartSafari = async () => {
     try {
-      const response = await fetch('/api/start-safari', {
+      const response = await fetch(`${config.API_BASE_URL}/api/start-safari`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ player_id: playerId, character_type: characterType }),
@@ -48,7 +32,6 @@ function StartSafari({ playerId, onComplete }) {
   const handleChangeCharacterType = async (type) => {
     setCharacterType(type);
     setShowChangeType(false);
-    await fetchPlayerStats();
   };
 
   return (

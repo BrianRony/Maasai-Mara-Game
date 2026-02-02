@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 const characterTypes = ['Adventurer', 'Hunter', 'Warden']; // Example character types
 
 function ChangeCharacterType({ playerId, onChange }) {
@@ -10,7 +12,7 @@ function ChangeCharacterType({ playerId, onChange }) {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/players/${playerId}`, {
+      const response = await fetch(`${config.API_BASE_URL}/api/players/${playerId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

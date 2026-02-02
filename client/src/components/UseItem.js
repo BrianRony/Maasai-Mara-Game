@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 const UseItem = ({ playerId, onComplete, stats }) => {
   const [result, setResult] = useState('');
   const [itemName, setItemName] = useState('');
@@ -14,7 +16,7 @@ const UseItem = ({ playerId, onComplete, stats }) => {
     }
 
     try {
-      const response = await fetch('/api/use-item', {
+      const response = await fetch(`${config.API_BASE_URL}/api/use-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 const TakePhoto = ({ playerId, onComplete }) => {
   const [result, setResult] = useState('');
 
   const takePhoto = async () => {
     try {
-      const response = await fetch('/api/take-photo', {
+      const response = await fetch(`${config.API_BASE_URL}/api/take-photo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

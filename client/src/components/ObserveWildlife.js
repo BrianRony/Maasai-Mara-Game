@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+import config from '../config';
+
 const ObserveWildlife = ({ playerId, onComplete }) => {
   const [wildlife, setWildlife] = useState(null);
   const [message, setMessage] = useState('');
@@ -7,11 +9,12 @@ const ObserveWildlife = ({ playerId, onComplete }) => {
 
   useEffect(() => {
     fetchWildlifeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId]);
 
   const fetchWildlifeData = async () => {
     try {
-      const response = await fetch(`/api/observe-wildlife?player_id=${playerId}`);
+      const response = await fetch(`${config.API_BASE_URL}/api/observe-wildlife?player_id=${playerId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.wildlife) setWildlife(data.wildlife);
@@ -26,7 +29,7 @@ const ObserveWildlife = ({ playerId, onComplete }) => {
 
   const handleObserve = async () => {
     try {
-      const response = await fetch(`/api/observe-wildlife?player_id=${playerId}`, {
+      const response = await fetch(`${config.API_BASE_URL}/api/observe-wildlife?player_id=${playerId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ player_id: playerId }),

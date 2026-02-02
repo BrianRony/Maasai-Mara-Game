@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import SafariLayout from "./SafariLayout";
 
+import config from '../config';
+
 function Characters() {
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/characters')
+    fetch(`${config.API_BASE_URL}/api/characters`)
       .then(r => r.json())
       .then(data => {
         setCharacters(data);

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 function InteractWithLocals({ playerId, onComplete }) {
   const [result, setResult] = useState('');
 
   const interactWithLocals = async () => {
     try {
-      const response = await fetch('/api/interact-with-locals', {
+      const response = await fetch(`${config.API_BASE_URL}/api/interact-with-locals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

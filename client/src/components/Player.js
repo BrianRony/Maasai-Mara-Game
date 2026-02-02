@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SafariLayout from "./SafariLayout";
 
+import config from '../config';
+
 function Player() {
   const [name, setName] = useState('');
   const [characterType, setCharacterType] = useState('Adventurer');
@@ -18,7 +20,7 @@ function Player() {
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch('/api/players');
+      const response = await fetch(`${config.API_BASE_URL}/api/players`);
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
@@ -38,7 +40,7 @@ function Player() {
     setError('');
 
     try {
-      const response = await fetch('/api/players', {
+      const response = await fetch(`${config.API_BASE_URL}/api/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, character_type: characterType }),

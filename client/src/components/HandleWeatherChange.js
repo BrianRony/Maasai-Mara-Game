@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 function HandleWeatherChange({ playerId, onComplete }) {
   const [result, setResult] = useState('');
 
   const handleWeatherChange = async () => {
     try {
-      const response = await fetch('/api/handle-weather-change', {
+      const response = await fetch(`${config.API_BASE_URL}/api/handle-weather-change`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

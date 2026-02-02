@@ -13,6 +13,8 @@ import FindItem from './FindItem';
 import UseItem from './UseItem';
 import CompleteSafari from './CompleteSafari';
 
+import config from '../config';
+
 function Game() {
   const { playerId } = useParams();
   const [step, setStep] = useState(0);
@@ -20,11 +22,12 @@ function Game() {
 
   useEffect(() => {
     fetchPlayerStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId]);
 
   const fetchPlayerStats = async () => {
     try {
-      const response = await fetch(`/api/players/${playerId}`);
+      const response = await fetch(`${config.API_BASE_URL}/api/players/${playerId}`);
       const data = await response.json();
       setPlayerStats(data);
     } catch (error) {

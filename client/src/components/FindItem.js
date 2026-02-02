@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 
+import config from '../config';
+
 function FindItem({ playerId, onComplete }) {
   const [result, setResult] = useState('');
 
   const findItem = async () => {
     try {
-      const response = await fetch('/api/find-item', {
+      const response = await fetch(`${config.API_BASE_URL}/api/find-item`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

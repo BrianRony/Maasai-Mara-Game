@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import config from '../config';
+
 function CompleteSafari({ playerId, onComplete }) {
   const [result, setResult] = useState('');
   const navigate = useNavigate();
 
   const completeSafari = async () => {
     try {
-      const response = await fetch('/api/complete-safari', {
+      const response = await fetch(`${config.API_BASE_URL}/api/complete-safari`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
