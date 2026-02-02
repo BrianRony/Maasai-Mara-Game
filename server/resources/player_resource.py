@@ -51,11 +51,15 @@ class PlayerResource(Resource):
 
     def post(self):
         """Create a new player"""
+        import sys # For logging
+        print("Received POST request to create player", file=sys.stderr)
+        
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, required=True, help="Player name cannot be blank")
         parser.add_argument('character_type', type=str, required=True, choices=['Adventurer', 'Hunter', 'Warden'],
                             help="Invalid character type")
         args = parser.parse_args()
+        print(f"Parsed args: {args}", file=sys.stderr)
 
         try:
             default_start_location_coordinates = getattr(Config, 'DEFAULT_START_LOCATION_COORDINATES', {"x": 0, "y": 0})
@@ -63,13 +67,15 @@ class PlayerResource(Resource):
             # Ensure the character type exists
             character = Character.query.filter_by(character_type=args['character_type']).first()
             if not character:
+                print(f"Character {args['character_type']} not found in DB", file=sys.stderr)
                 return {'message': 'Character not found'}, 404
+            
+            print(f"Found character: {character.uuid}, Inventory: {character.inventory}", file=sys.stderr)
 
             # Fetch the default starting location
             starting_location = Map.query.filter_by(coordinates=default_start_location_coordinates).first()
-            
-            # Fallback if map not found (prevent 404 crash if map missing)
             starting_location_uuid = starting_location.uuid if starting_location else None
+            print(f"Starting location UUID: {starting_location_uuid}", file=sys.stderr)
 
             # Check if a player with the same name already exists
             existing_player = Player.query.filter_by(name=args['name']).first()
@@ -81,19 +87,24 @@ class PlayerResource(Resource):
                 character_id=character.uuid,
                 health=100,
                 score=0,
-                inventory=character.inventory,
+                inventory=character.inventory if character.inventory else [], # Safety check
                 current_location_id=starting_location_uuid
             )
-
+            
+            print("Adding new player to session...", file=sys.stderr)
             db.session.add(new_player)
+            print("Committing session...", file=sys.stderr)
             db.session.commit()
+            print("Player created successfully!", file=sys.stderr)
 
             return new_player.to_dict(), 201
 
         except SQLAlchemyError as e:
             db.session.rollback()
+            print(f"SQLAlchemy Error: {str(e)}", file=sys.stderr)
             return {'message': 'Database error occurred', 'error': str(e)}, 500
         except Exception as e:
+            print(f"General Error: {str(e)}", file=sys.stderr)
             return {'message': 'An unexpected error occurred', 'error': str(e)}, 500
 
     def patch(self, player_id):
