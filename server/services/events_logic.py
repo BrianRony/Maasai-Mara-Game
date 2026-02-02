@@ -14,13 +14,26 @@ class MaasaiMaraEventsLogic(GameService):
             raise ValueError(f"No player found with id {player_id}")
         self.health_resource = HealthResource()
         self.inventory_resource = InventoryResource()
-        self.animals = ['lion', 'elephant', 'giraffe', 'zebra', 'wildebeest', 'cheetah']
-        self.weather_conditions = ['sunny', 'rainy', 'windy', 'misty']
+        
+        self.animals = [
+            {'name': 'Lion', 'danger': 8, 'rare': False, 'desc': 'The king of the beasts.'},
+            {'name': 'Elephant', 'danger': 7, 'rare': False, 'desc': 'A massive bull elephant with giant tusks.'},
+            {'name': 'Black Rhino', 'danger': 9, 'rare': True, 'desc': 'An critically endangered solitary browser.'},
+            {'name': 'Leopard', 'danger': 8, 'rare': True, 'desc': 'A silent shadow in the acacia trees.'},
+            {'name': 'Cheetah', 'danger': 5, 'rare': False, 'desc': ' The fastest land animal.'},
+            {'name': 'Buffalo', 'danger': 9, 'rare': False, 'desc': 'The widowmaker. Grumpy and dangerous.'},
+            {'name': 'Hippo', 'danger': 10, 'rare': False, 'desc': 'Territorial and deadly in the water.'},
+            {'name': 'Giraffe', 'danger': 2, 'rare': False, 'desc': 'A towering giant eating from the treetops.'},
+            {'name': 'Pangolin', 'danger': 0, 'rare': True, 'desc': 'A shy, scaly anteater. Extremely rare!'},
+        ]
+        
+        self.weather_conditions = ['scorching sun', 'monsoon rain', 'dust storm', 'perfect breeze', 'thick fog', 'thunderstorm']
+        
         self.items = {
-            'common': ['water bottle', 'binoculars', 'camera', 'snack', 'first aid kit'],
-            'Adventurer': ['map', 'compass', 'rope', 'flashlight', 'multi-tool'],
-            'Hunter': ['rifle', 'ammunition', 'hunting knife', 'camouflage gear', 'animal calls'],
-            'Warden': ['radio', 'tranquilizer gun', 'wildlife guide', 'GPS tracker', 'rescue flares']
+            'common': ['water bottle', 'binoculars', 'camera', 'snack', 'first aid kit', 'safari hat'],
+            'Adventurer': ['ancient map', 'compass', 'climbing gear', 'flare gun', 'multi-tool'],
+            'Hunter': ['rifle', 'ammunition', 'hunting knife', 'ghillie suit', 'decoys'],
+            'Warden': ['radio', 'tranquilizer gun', 'veterinary kit', 'drone', 'anti-venom']
         }
         self.default_start_location_coordinates = getattr(Config, 'DEFAULT_START_LOCATION_COORDINATES', {"x": 0, "y": 0})
 
@@ -33,10 +46,18 @@ class MaasaiMaraEventsLogic(GameService):
 
     def _build_response(self, success, message):
         """Standardized response helper with updated stats."""
+        status = self.get_player_status()
+        
+        # Game Over Check
+        if status.get('health', 0) <= 0:
+            success = False
+            # Ensure health is not negative in display
+            status['health'] = 0
+            
         return {
             'success': success,
             'message': message,
-            'updated_stats': self.get_player_status()
+            'updated_stats': status
         }
 
     def start_safari(self):
@@ -46,229 +67,279 @@ class MaasaiMaraEventsLogic(GameService):
         
         self.inventory_resource.update_inventory(self.player.uuid, starting_item, 'add')
         
+        intro_text = {
+            'Adventurer': "You adjust your backpack. The horizon is endless. What secrets does it hold?",
+            'Hunter': "You check your rifle bolt. Smooth. The Mara is wild, and you are ready.",
+            'Warden': "You tune your radio. The rangers report activity in Sector 4. Time to patrol."
+        }
+
         return {
-            'message': f"Welcome to the Maasai Mara! Your safari adventure begins. You've been equipped with a {starting_item}.",
+            'message': f"{intro_text.get(character_type, 'Welcome to the Mara.')} You have a {starting_item}.",
             'stats': self.get_player_status(),
             'startingItem': starting_item
         }
 
     def get_observable_wildlife(self):
-        animal = random.choice(self.animals)
-        return {'name': animal, 'description': f'A majestic {animal} in the wild.'}
+        animal_data = random.choice(self.animals)
+        return {'name': animal_data['name'], 'description': animal_data['desc']}
     
 
     def observe_wildlife(self):
-        animal = self.get_observable_wildlife()['name']
-        character_type = self.player.character.character_type
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
+
+        animal_obj = random.choice(self.animals)
+        animal = animal_obj['name']
+        danger_level = animal_obj['danger']
+        is_rare = animal_obj['rare']
         
+        character_type = self.player.character.character_type
         inventory_response = self.inventory_resource.get_inventory(self.player.uuid)
         inventory = inventory_response[0].get('inventory', []) if isinstance(inventory_response, tuple) else inventory_response.get('inventory', [])
         
-        base_score = 10
+        base_score = 15 if is_rare else 10
         health_change = 0
         message = ""
 
-        if character_type == 'Adventurer':
-            if 'camera' in inventory:
-                self.player.score += base_score + 10
+        # SCENARIO GENERATION
+        scenarios = [
+            f"The {animal} is sleeping under a tree.",
+            f"Suddenly! A {animal} bursts from the bushes!",
+            f"You spot a {animal} drinking at a watering hole.",
+            f"A {animal} is staring right at you."
+        ]
+        scenario = random.choice(scenarios)
+
+        # 1. SPECIAL INTERACTION: WARDEN + RARE/INJURED
+        if character_type == 'Warden' and random.random() < 0.3:
+            if 'veterinary kit' in inventory or 'tranquilizer gun' in inventory:
+                self.player.score += 60
+                return self._build_response(True, f"HEROIC ACT: You found an injured {animal} caught in a snare. Using your gear, you sedated and treated it. +60 points!")
+        
+        # 2. SPECIAL INTERACTION: HUNTER + DANGEROUS
+        if character_type == 'Hunter' and danger_level >= 8 and random.random() < 0.3:
+            if 'rifle' in inventory:
+                self.player.score += 50
                 health_change = -5
-                message = f"You captured an amazing photo of a {animal}! +20 points, -5 health"
-            else:
-                self.player.score += base_score
-                health_change = -2
-                message = f"You got closer to the {animal} and documented it in your journal. +10 points, -2 health"
-        elif character_type == 'Hunter':
-            if 'binoculars' in inventory:
-                self.player.score += base_score + 15
-                health_change = -3
-                message = f"You tracked a {animal} from a safe distance. +25 points, -3 health"
-            else:
-                self.player.score += base_score
-                health_change = -5
-                message = f"You observed a {animal}'s behavior up close. +10 points, -5 health"
-        elif character_type == 'Warden':
-            if 'wildlife guide' in inventory:
-                self.player.score += base_score + 20
-                health_change = -2
-                message = f"You identified a rare {animal} and updated conservation records. +30 points, -2 health"
-            else:
-                self.player.score += base_score
-                health_change = -4
-                message = f"You ensured the safety of a {animal} in its natural habitat. +10 points, -4 health"
+                return self._build_response(True, f"ADRENALINE: The {animal} charged! You fired a warning shot and held your ground. It backed off. +50 points, -5 health (stress).")
+
+        # 3. SPECIAL INTERACTION: ADVENTURER + HIDDEN
+        if character_type == 'Adventurer' and is_rare:
+            self.player.score += 70
+            return self._build_response(True, f"DISCOVERY: You found a secret path leading to a nesting {animal}. This has never been mapped before! +70 points!")
+
+        # STANDARD LOGIC
+        if danger_level > 6:
+            # High Danger Logic
+            if character_type == 'Adventurer':
+                if 'camera' in inventory: 
+                    message = f"{scenario} You risked it all for the shot! +30 points, -10 health (scrapes)."
+                    self.player.score += 30; health_change = -10
+                else:
+                    message = f"{scenario} It's too dangerous! You ran away. -20 health."
+                    health_change = -20
+            
+            elif character_type == 'Hunter':
+                 message = f"{scenario} You utilized your tracking knowledge to stay downwind. Safe. +20 points."
+                 self.player.score += 20
+            
+            elif character_type == 'Warden':
+                 message = f"{scenario} You noted its aggressive behavior in your log. +25 points."
+                 self.player.score += 25
+                 health_change = -5 # Minor risk
+
         else:
-            self.player.score += base_score
-            health_change = -5
-            message = f"You got a closer look at the {animal}! +10 points, -5 health"
+            # Low Danger Logic
+            if 'binoculars' in inventory:
+                message = f"You watched the {animal} from afar. Peaceful. +15 points."
+                self.player.score += 15
+            else:
+                message = f"You got close to the {animal}. It was a magical moment. +10 points."
+                self.player.score += 10
 
         self.health_resource.update_health(self.player.uuid, health_change)
         return self._build_response(True, message)
 
 
     def interact_with_locals(self):
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
+        
+        current_health = self._get_health_safe()
         character_type = self.player.character.character_type
         
+        # HOSPITALITY MECHANIC (Life Saver)
+        if current_health < 30:
+            heal_amount = 50
+            self.health_resource.update_health(self.player.uuid, heal_amount)
+            return self._build_response(True, "The village elders see your wounds. They take you in, apply traditional herbs, and feed you warm broth. You are saved! +50 Health.")
+
+        # TRADE / GIFT MECHANIC
+        gift_roll = random.random()
+        if gift_roll < 0.25:
+            # They give you something
+            items = ['snack', 'water bottle', 'spear', 'beaded necklace']
+            gift = random.choice(items)
+            self.inventory_resource.update_inventory(self.player.uuid, gift, 'add')
+            return self._build_response(True, f"The Maasai welcome you warmly. An elder hands you a {gift} as a token of friendship. (Item added to inventory)")
+
+        # Standard Interactions with Flavor
         if character_type == 'Adventurer':
-            interaction = "You participated in a traditional Maasai ceremony and learned about their customs."
-            points = 25
-            health_increase = 10
+            msg = "You show them your map. They laugh and show you a 'shortcut' that isn't on any paper."
+            points = 25; hp = 5
         elif character_type == 'Hunter':
-            interaction = "You exchanged hunting techniques with local Maasai warriors."
-            points = 20
-            health_increase = 5
+            msg = "You engage in a spear-throwing contest with the warriors. You didn't win, but you earned their respect."
+            points = 30; hp = -5 # Fatigue
         elif character_type == 'Warden':
-            interaction = "You collaborated with local Maasai on wildlife conservation efforts."
-            points = 30
-            health_increase = 15
+            msg = "You deliver medical supplies to the village. The chief thanks you for protecting their cattle from lions."
+            points = 40; hp = 10
         else:
-            interaction = random.choice([
-                "You learned about Maasai culture.",
-                "You participated in a traditional dance.",
-                "You helped herd cattle with the Maasai."
-            ])
-            points = 20
-            health_increase = 5
+            msg = "You sit by the fire and listen to ancient stories of when the earth was young."
+            points = 20; hp = 5
 
         self.player.score += points
-        self.health_resource.update_health(self.player.uuid, health_increase)
-        
-        return self._build_response(True, f"{interaction} +{points} points. Your health increased by {health_increase}.")
+        self.health_resource.update_health(self.player.uuid, hp)
+        return self._build_response(True, f"{msg} +{points} pts, {hp} health.")
 
     def handle_weather_change(self):
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
+
         new_weather = random.choice(self.weather_conditions)
         character_type = self.player.character.character_type
-        current_health = self._get_health_safe()
-
+        
         health_change = 0
-        if new_weather == 'rainy':
-            if character_type == 'Hunter':
-                health_change = -2
-            elif character_type == 'Adventurer':
-                health_change = -7
-            else:  # Warden
-                health_change = -5
-            
-            self.health_resource.update_health(self.player.uuid, health_change)
-            msg = f"It started raining. Your health changed by {health_change}. Current health: {current_health + health_change}"
+        msg = ""
 
-        elif new_weather == 'sunny':
-            if character_type == 'Hunter':
-                health_change = 7
-            elif character_type == 'Adventurer':
-                health_change = 3
-            else:  # Warden
-                health_change = 5
-            
-            self.health_resource.update_health(self.player.uuid, health_change)
-            msg = f"The sun is shining. Your health increased by {health_change}. Current health: {current_health + health_change}"
+        if new_weather == 'dust storm':
+            health_change = -15
+            msg = "A blinding dust storm hits! Visibility is zero. You choke on the grit. -15 health."
+            if 'safari hat' in self.player.inventory: # hypothetical check
+                health_change = -5
+                msg += " (Your hat helped!)"
+        
+        elif new_weather == 'monsoon rain':
+            if character_type == 'Warden':
+                 msg = "Heavy rains. Good for the ecosystem, bad for driving. You navigate the mud expertly."
+            else:
+                 health_change = -10
+                 msg = " torrential rain turns the roads to rivers. You are soaked and shivering. -10 health."
+
+        elif new_weather == 'scorching sun':
+             if 'water bottle' in self.player.inventory:
+                 msg = "It's brutally hot, but you have water. You stay hydrated."
+             else:
+                 health_change = -12
+                 msg = "The African sun beats down relentlessly. You are dehydrated. -12 health."
+
+        elif new_weather == 'perfect breeze':
+            health_change = 10
+            msg = "A cool breeze blows across the savanna. It lifts your spirits. +10 health."
 
         else:
-            if character_type == 'Hunter':
-                msg = f"The weather changed to {new_weather}. As a Hunter, you're well-prepared for any conditions!"
-            elif character_type == 'Adventurer':
-                msg = f"The weather changed to {new_weather}. Be extra cautious, Adventurer!"
-            else:  # Warden
-                msg = f"The weather changed to {new_weather}. As a Warden, you're ready to face the elements!"
-        
+            msg = f"The weather shifts to {new_weather}."
+
+        self.health_resource.update_health(self.player.uuid, health_change)
         return self._build_response(True, msg)
 
     def take_photo(self):
-        subjects = self.animals + ['landscape', 'sunset', 'Maasai village']
-        subject = random.choice(subjects)
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
+
+        # Determine SUBJECT quality
+        roll = random.random()
+        if roll < 0.1:
+            subject = "The Great Migration (River Crossing)"
+            quality = "Legendary"
+            score = 100
+        elif roll < 0.4:
+            subject = "A kill in progress"
+            quality = "Rare"
+            score = 50
+        else:
+            subject = "A sleeping lion"
+            quality = "Common"
+            score = 15
+
         inventory_response = self.inventory_resource.get_inventory(self.player.uuid)
         inventory = inventory_response[0].get('inventory', []) if isinstance(inventory_response, tuple) else inventory_response.get('inventory', [])
         
-        character_type = self.player.character.character_type
-        
-        success = False
-        message = ""
-
         if 'camera' in inventory:
-            success = True
-            if character_type == 'Adventurer':
-                self.player.score += 20
-                message = f"You captured a breathtaking shot of a {subject}. Your adventurous spirit shines through the image! +20 points"
-            elif character_type == 'Hunter':
-                self.player.score += 15
-                message = f"You snapped a rare photo of a {subject} in its natural habitat. Your tracking skills paid off! +15 points"
-            elif character_type == 'Warden':
-                self.player.score += 25
-                message = f"You documented a {subject} for conservation purposes. This photo will greatly aid research efforts! +25 points"
+            if 'drone' in inventory: # Warden item
+                score += 20
+                msg = f"AERIAL SHOT! You used your drone to capture {subject} from above. +{score} points."
             else:
-                self.player.score += 15
-                message = f"You took a beautiful photo of a {subject} with your camera. +15 points"
+                msg = f"Click! You captured a {quality} photo of {subject}. +{score} points."
+            
+            self.player.score += score
+            return self._build_response(True, msg)
         else:
-            success = False
-            if character_type == 'Adventurer':
-                message = "You wish you had a camera to capture this amazing moment!"
-            elif character_type == 'Hunter':
-                message = "A camera would be useful for scouting and documenting wildlife patterns."
-            elif character_type == 'Warden':
-                message = "A camera would be a valuable tool for your conservation work. Consider acquiring one."
-            else:
-                message = "You don't have a camera to take photos."
-        
-        return self._build_response(success, message)
+            return self._build_response(False, f"You witness {subject}, but without a camera, it's just a memory.")
 
     def find_item(self):
-        character_type = self.player.character.character_type
-        common_items = self.items['common']
-        specific_items = self.items[character_type]
-        if random.random() < 0.7:
-            item = random.choice(specific_items)
-        else:
-            item = random.choice(common_items)
-        
-        try:
-            self.inventory_resource.update_inventory(self.player.uuid, item, 'add')
-            if item in specific_items:
-                msg = f"You found a {item}! This will be particularly useful for a {character_type}. Added to your inventory."
-            else:
-                msg = f"You found a {item}! It has been added to your inventory."
-            return self._build_response(True, msg)
-        except ValueError as e:
-            return self._build_response(False, f"You found a {item}, but couldn't take it: {str(e)}")
-        except Exception as e:
-             return self._build_response(False, f"Error finding item: {str(e)}")
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
 
+        character_type = self.player.character.character_type
+        
+        # Risk vs Reward
+        roll = random.random()
+        
+        if roll < 0.2:
+            # BAD EVENT
+            damage = -15
+            self.health_resource.update_health(self.player.uuid, damage)
+            return self._build_response(True, "You stick your hand in a hollow log looking for supplies... A BLACK MAMBA strikes! -15 health.")
+        
+        elif roll < 0.3:
+            # FLAVOR EVENT (No Item)
+            return self._build_response(True, "You found an old poacher's camp. It's abandoned. Nothing useful here, just bad memories.")
+
+        else:
+            # FIND ITEM
+            if character_type == 'Adventurer' and random.random() < 0.5:
+                item = 'ancient idol' # Score item
+                self.player.score += 50
+                return self._build_response(True, "JACKPOT! You found an ancient tribal idol buried in the sand. It belongs in a museum! +50 points.")
+            
+            common_items = self.items['common']
+            item = random.choice(common_items)
+            
+            try:
+                self.inventory_resource.update_inventory(self.player.uuid, item, 'add')
+                return self._build_response(True, f"You scavenged a {item}! Added to inventory.")
+            except:
+                return self._build_response(False, "Inventory full.")
 
     def use_item(self, item_name):
-        character_type = self.player.character.character_type
+        if self._get_health_safe() <= 0: return self._build_response(False, "You are incapacitated.")
         
+        # "Use" logic is mostly standard, but let's add flavor
         try:
             self.inventory_resource.update_inventory(self.player.uuid, item_name, 'remove')
             
-            message = ""
-            if item_name == 'water bottle':
-                health_increase = 15 if character_type == 'Adventurer' else 10
-                self.health_resource.update_health(self.player.uuid, health_increase)
-                message = f"You drank from your water bottle. +{health_increase} health"
-
-            elif item_name == 'snack':
-                health_increase = 8 if character_type == 'Hunter' else 5
-                self.health_resource.update_health(self.player.uuid, health_increase)
-                message = f"You ate a snack. +{health_increase} health"
-
-            elif item_name == 'first aid kit':
-                health_increase = 25 if character_type == 'Warden' else 20
-                self.health_resource.update_health(self.player.uuid, health_increase)
-                message = f"You used the first aid kit. +{health_increase} health"
-
-            elif item_name in self.items[character_type]:
-                self.player.score += 10
-                message = f"You skillfully used the {item_name}. As a {character_type}, you gain +10 points!"
-
-            else:
-                message = f"You used the {item_name}."
+            msg = f"You used {item_name}."
             
-            return self._build_response(True, message)
+            if item_name == 'first aid kit':
+                heal = 40
+                self.health_resource.update_health(self.player.uuid, heal)
+                msg = "You dressed your wounds. Feeling much better. +40 HP."
+            
+            elif item_name == 'water bottle':
+                heal = 15
+                self.health_resource.update_health(self.player.uuid, heal)
+                msg = "Cool, refreshing water. +15 HP."
+                
+            elif item_name == 'flare gun': # Adventurer
+                self.player.score += 20
+                msg = "You fired a flare to signal your position. A ranger plane dipped its wings in acknowledgement. +20 pts."
+            
+            elif item_name == 'ancient idol':
+                self.player.score += 50
+                msg = "You admire the idol. It's worth a fortune in points."
 
-        except ValueError:
-            return self._build_response(False, f"You don't have a {item_name} in your inventory.")
+            return self._build_response(True, msg)
+
         except Exception as e:
             return self._build_response(False, f"Could not use item: {str(e)}")
 
-
     def complete_safari(self):
+        # Even if dead, you reach this screen to see stats
         character_type = self.player.character.character_type
         final_score = self.player.score
         final_health = self._get_health_safe()
@@ -276,38 +347,15 @@ class MaasaiMaraEventsLogic(GameService):
         inventory_response = self.inventory_resource.get_inventory(self.player.uuid)
         inventory = inventory_response[0].get('inventory', []) if isinstance(inventory_response, tuple) else inventory_response.get('inventory', [])
 
-        achievements = []
-        if final_score > 200:
-            achievements.append("Master Explorer")
-        if final_health > 90:
-            achievements.append("Survival Expert")
-        if len(inventory) >= 5:
-            achievements.append("Resourceful Traveler")
-        
-        # ... (Achievement logic remains same) ...
-        # Just copying logic to be safe, but returning standard dict
-        if character_type == 'Adventurer':
-            if 'camera' in inventory and final_score > 150:
-                achievements.append("Wildlife Photographer")
-            if final_score > 250:
-                achievements.append("Thrill Seeker")
-        elif character_type == 'Hunter':
-            if 'binoculars' in inventory and final_score > 180:
-                achievements.append("Expert Tracker")
-            if final_health > 95:
-                achievements.append("Wilderness Survivor")
-        elif character_type == 'Warden':
-            if 'wildlife guide' in inventory and final_score > 200:
-                achievements.append("Conservation Champion")
-            if len([item for item in inventory if item in self.items['Warden']]) >= 3:
-                achievements.append("Well-Equipped Warden")
+        if final_health <= 0:
+            return self._build_response(False, f"TRAGEDY. Your safari ended in disaster. The Mara claims another soul.\nFinal Score: {final_score}")
 
-        character_message = {
-            'Adventurer': "Your adventurous spirit has led you to great discoveries!",
-            'Hunter': "Your tracking skills have proven invaluable in the wild!",
-            'Warden': "Your dedication to conservation has made a real difference!"
-        }.get(character_type, "")
-        
-        msg = f"Congratulations, {character_type}! You've completed your Maasai Mara safari with a score of {final_score} and {final_health} health. {character_message}\nInventory: {', '.join(inventory)}.\nAchievements: {', '.join(achievements)}"
+        achievements = []
+        if final_score > 400: achievements.append("Legend of the Mara")
+        if final_health > 90: achievements.append("Survivor")
+        if 'ancient idol' in inventory: achievements.append("Tomb Raider")
+        if 'veterinary kit' in inventory and character_type == 'Warden': achievements.append("Dr. Doolittle")
+
+        msg = f"MISSION SUCCESS!\nClass: {character_type}\nScore: {final_score}\nHealth: {final_health}\n\nAchievements: {', '.join(achievements)}"
         
         return self._build_response(True, msg)

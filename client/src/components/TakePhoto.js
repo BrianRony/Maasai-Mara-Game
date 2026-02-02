@@ -20,7 +20,7 @@ const TakePhoto = ({ playerId, onComplete }) => {
         // Progression
         setTimeout(() => {
           if (onComplete) onComplete(data.updated_stats || {});
-        }, 2000);
+        }, 6000);
       } else {
         setResult('Error taking photo: ' + response.statusText);
       }

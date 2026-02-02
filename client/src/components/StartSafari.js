@@ -9,11 +9,11 @@ function StartSafari({ playerId, onComplete }) {
 
   const fetchPlayerStats = async () => {
     try {
-      const response = await fetch(`/api/players`);
+      // FIX: Fetch only the specific player, returns object directly
+      const response = await fetch(`/api/players/${playerId}`);
       if (response.ok) {
         const data = await response.json();
-        const player = data.find(player => player.uuid === playerId);
-        setPlayerStats(player);
+        setPlayerStats(data);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);

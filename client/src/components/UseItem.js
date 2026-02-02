@@ -30,7 +30,7 @@ const UseItem = ({ playerId, onComplete, stats }) => {
         // Progression
         setTimeout(() => {
           if (onComplete) onComplete(data.updated_stats || {});
-        }, 2000);
+        }, 6000);
       } else {
         const errorData = await response.json();
         setResult(`Error: ${errorData.message}`);

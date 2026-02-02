@@ -5,7 +5,7 @@ import Characters from './components/Characters';
 import About from './components/About';
 import Player from './components/Player';
 import Game from './components/Game';
-import ObserveWildlife from './components/ObserveWildlife';
+import Leaderboard from './components/Leaderboard';
 
 const routes = [
   {
@@ -24,6 +24,10 @@ const routes = [
       {
         path: 'player',
         element: <Player />,
+      },
+      {
+        path: 'leaderboard',
+        element: <Leaderboard />,
       },
       {
         path: 'game/:playerId',

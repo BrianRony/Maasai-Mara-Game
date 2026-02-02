@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import SafariLayout from './SafariLayout';
+import PlayerStatus from './PlayerStatus';
+
+// Action Components
 import StartSafari from './StartSafari';
 import ObserveWildlife from './ObserveWildlife';
 import InteractWithLocals from './InteractWithLocals';
@@ -8,8 +12,6 @@ import TakePhoto from './TakePhoto';
 import FindItem from './FindItem';
 import UseItem from './UseItem';
 import CompleteSafari from './CompleteSafari';
-import PlayerStatus from './PlayerStatus';
-import SafariLayout from './SafariLayout';
 
 function Game() {
   const { playerId } = useParams();
@@ -26,17 +28,18 @@ function Game() {
       const data = await response.json();
       setPlayerStats(data);
     } catch (error) {
-      console.error('Error fetching player stats:', error);
+      console.error('Error fetching stats:', error);
     }
   };
 
   const nextStep = (newStats) => {
-    // Merge new stats into existing state
-    setPlayerStats(prevStats => ({ ...prevStats, ...newStats }));
-    // Advance step
-    setStep(prevStep => prevStep + 1);
+    if (newStats) {
+        setPlayerStats(prev => ({ ...prev, ...newStats }));
+    }
+    setStep(prev => prev + 1);
   };
 
+  // The Linear Journey
   const gameSteps = [
     <StartSafari playerId={playerId} onComplete={nextStep} stats={playerStats} />,
     <ObserveWildlife playerId={playerId} onComplete={nextStep} stats={playerStats} />,
@@ -48,12 +51,7 @@ function Game() {
     <CompleteSafari playerId={playerId} onComplete={nextStep} stats={playerStats} />
   ];
 
-  if (step >= gameSteps.length) {
-    // Reset to start if we go past the end (though CompleteSafari handles its own exit)
-    return <div>Safari Completed!</div>;
-  }
-
-  // Titles for the layout based on current step
+  // Title logic for the Header
   const titles = [
     { title: "Karibu!", subtitle: "Begin your adventure" },
     { title: "The Wild", subtitle: "Observe the animals" },
@@ -62,19 +60,34 @@ function Game() {
     { title: "Capture", subtitle: "Take a photo" },
     { title: "Scavenge", subtitle: "Find items" },
     { title: "Survival", subtitle: "Use your gear" },
-    { title: "Journey's End", subtitle: "See your legacy" }
+    { title: "Legacy", subtitle: "End of the road" }
   ];
 
-  const currentInfo = titles[step] || { title: "Safari", subtitle: "" };
+  const isGameOver = playerStats?.health <= 0 && step > 0;
+  const currentInfo = titles[step] || { title: "Maasai Mara", subtitle: "" };
 
   return (
-    <SafariLayout title={currentInfo.title} subtitle={currentInfo.subtitle}>
-      {/* The Active Game Step */}
-      <div className="mb-8">
-        {gameSteps[step]}
+    <SafariLayout title={isGameOver ? "GAME OVER" : currentInfo.title} subtitle={isGameOver ? "The Wild Has Claimed You" : currentInfo.subtitle}>
+      {/* Game Content */}
+      <div className="mb-8 min-h-[300px] flex flex-col justify-center">
+        {isGameOver ? (
+          <div className="text-center animate-pulse">
+            <div className="text-6xl mb-4">💀</div>
+            <h2 className="text-3xl text-red-600 font-bold mb-4">YOUR JOURNEY ENDS HERE</h2>
+            <p className="text-gray-400 mb-8">You have succumbed to the dangers of the Mara.</p>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="bg-red-700 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          step < gameSteps.length ? gameSteps[step] : <div>Safari Completed!</div>
+        )}
       </div>
 
-      {/* Floating Status Bar (Always Visible) */}
+      {/* Persistent Status Bar */}
       <PlayerStatus stats={playerStats} />
     </SafariLayout>
   );

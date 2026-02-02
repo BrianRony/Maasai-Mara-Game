@@ -38,9 +38,15 @@ const ObserveWildlife = ({ playerId, onComplete }) => {
         setMessage(data.message);
         setTimeout(() => {
           if (onComplete) onComplete(data.updated_stats);
-        }, 2500); // 2.5s delay to read the outcome
+        }, 6000); // 6s delay to read the outcome
       } else {
-        setMessage(`Error: ${data.message}`);
+        setMessage(`${data.message}`);
+        // If it's a game over (health <= 0), we must proceed to update stats so Game.js renders Game Over
+        if (data.updated_stats && data.updated_stats.health <= 0) {
+           setTimeout(() => {
+              if (onComplete) onComplete(data.updated_stats);
+           }, 4000);
+        }
       }
     } catch (error) {
       setMessage(`Connection Error: ${error.message}`);

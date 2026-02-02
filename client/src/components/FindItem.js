@@ -20,7 +20,7 @@ function FindItem({ playerId, onComplete }) {
         // Progression
         setTimeout(() => {
           if (onComplete) onComplete(data.updated_stats || {});
-        }, 2000);
+        }, 6000);
       } else {
         setResult('Error finding item: ' + response.statusText);
       }

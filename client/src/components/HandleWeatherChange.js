@@ -20,7 +20,7 @@ function HandleWeatherChange({ playerId, onComplete }) {
         // Wait 2 seconds so user can read the message, then move to next step
         setTimeout(() => {
           if (onComplete) onComplete(data.updated_stats || {});
-        }, 2000);
+        }, 6000);
       } else {
         setResult('Error handling weather change: ' + response.statusText);
       }
