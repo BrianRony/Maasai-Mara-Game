@@ -61,7 +61,8 @@ class MaasaiMaraEventsLogic(GameService):
         }
 
     def start_safari(self):
-        self.player.current_location = Map.query.filter_by(coordinates=self.default_start_location_coordinates).first()
+        # Fix: Fetch by name to avoid JSON comparison error
+        self.player.current_location = Map.query.filter_by(location_name="Savannah Plains").first()
         character_type = self.player.character.character_type
         starting_item = self.items[character_type][0]
         
