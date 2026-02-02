@@ -1,4 +1,3 @@
-from app import create_app
 from models.character import Character
 from models.player import Player
 from models.quest import Quest
@@ -6,8 +5,6 @@ from models.map import Map
 from extension import db
 from random import choice as rc
 import uuid
-
-app = create_app()
 
 def seed_characters():
     characters = [
@@ -122,6 +119,8 @@ def seed_quests(maps):
     db.session.commit()
 
 if __name__ == '__main__':
+    from app import create_app
+    app = create_app()
     with app.app_context():
         print("Starting seed...")
         db.session.query(Player).delete()

@@ -81,6 +81,27 @@ def create_app():
 
 app = create_app()
 
+# AUTO-MIGRATION LOGIC FOR RENDER
+with app.app_context():
+    try:
+        db.create_all()
+        print("Database tables created.")
+        
+        # Check if characters exist, if not, seed the DB
+        from models.character import Character
+        if not Character.query.first():
+            print("No characters found. Seeding database...")
+            # Import seed functions
+            from seed import seed_characters, seed_maps, seed_players, seed_quests
+            # Run seeders
+            characters = seed_characters()
+            maps = seed_maps()
+            # We don't necessarily need dummy players/quests for the game to work, 
+            # but characters/maps are essential.
+            print("Database seeded successfully!")
+    except Exception as e:
+        print(f"Error during startup migration: {e}")
+
 if __name__ == "__main__":
     # Create Flask app instance and run the server
     app.run(debug=True, port= 5555)
