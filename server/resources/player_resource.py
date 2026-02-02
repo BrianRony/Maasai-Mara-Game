@@ -72,8 +72,8 @@ class PlayerResource(Resource):
             
             print(f"Found character: {character.uuid}, Inventory: {character.inventory}", file=sys.stderr)
 
-            # Fetch the default starting location
-            starting_location = Map.query.filter_by(coordinates=default_start_location_coordinates).first()
+            # Fetch the default starting location (By name, safer for Postgres)
+            starting_location = Map.query.filter_by(location_name="Savannah Plains").first()
             starting_location_uuid = starting_location.uuid if starting_location else None
             print(f"Starting location UUID: {starting_location_uuid}", file=sys.stderr)
 
